@@ -333,7 +333,6 @@ export const dict: Record<string, { en: string; kn: string }> = {
   discard: { en: "Discard", kn: "ಬಿಟ್ಟುಬಿಡಿ" },
   modifyCategory: { en: "Modify Category", kn: "ವಿಭಾಗ ಸಂಪಾದಿಸಿ" },
   saveCategory: { en: "Save Category", kn: "ವಿಭಾಗ ಉಳಿಸಿ" },
-
   // ----- Vendors Expanded -----
   vendorModule: { en: "Vendor Module", kn: "ಪೂರೈಕೆದಾರರ ಮಾಡ್ಯೂಲ್" },
   vendorSubtitle: { en: "Manage supplier relationships, track borrowed equipment, and generate bills.", kn: "ಪೂರೈಕೆದಾರರ ಸಂಬಂಧಗಳನ್ನು ನಿರ್ವಹಿಸಿ, ಎರವಲು ಪಡೆದ ಸಾಮಗ್ರಿಗಳನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ ಮತ್ತು ಬಿಲ್‌ಗಳನ್ನು ರಚಿಸಿ." },
