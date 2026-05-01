@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(), 
     mode === "development" && componentTagger(),
+    /*
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'icons/*.png'],
@@ -40,6 +41,7 @@ export default defineConfig(({ mode }) => ({
         ]
       }
     })
+    */
   ].filter(Boolean),
   resolve: {
     alias: {
