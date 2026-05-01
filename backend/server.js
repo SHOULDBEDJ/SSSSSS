@@ -193,10 +193,6 @@ io.on('connection', (socket) => {
   console.log('Client connected for real-time sync');
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  httpServer.listen(PORT, () => {
-    console.log(`Smart Tailor Backend running on port ${PORT} (Turso Connected)`);
-  });
-}
-
-export default app;
+httpServer.listen(PORT, () => {
+  console.log(`Smart Tailor Backend running on port ${PORT} (Turso Connected)`);
+});
