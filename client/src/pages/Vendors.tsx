@@ -235,42 +235,37 @@ const VendorManagementDialog = ({ vendor, onClose, t }: any) => {
         </div>
 
         <div className="p-8 space-y-12">
-          {/* BORROWED ITEMS TABLE (Inventory Structure Mirror) */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 border-b pb-2">
               <Layers className="h-4 w-4 text-primary" />
               <h3 className="font-bold uppercase tracking-widest text-xs">{t("activeBorrowedTable")}</h3>
             </div>
-            <div className="rounded-xl border shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-[10px] uppercase font-bold text-muted-foreground border-b">
-                  <tr>
-                    <th className="text-left px-6 py-4">{t("name")}</th>
-                    <th className="text-left px-6 py-4">{t("category")}</th>
-                    <th className="text-right px-6 py-4">{t("qty")}</th>
-                    <th className="text-left px-6 py-4">{t("borrowedDateTime")}</th>
-                    <th className="text-center px-6 py-4">{t("status")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {borrowedItems.length === 0 && (
-                    <tr><td colSpan={5} className="py-16 text-center text-muted-foreground italic">{t("noItemsListed")}</td></tr>
-                  )}
-                  {borrowedItems.map(it => (
-                    <tr key={it.id} className="hover:bg-muted/30">
-                      <td className="px-6 py-4 font-bold">{it.name}</td>
-                      <td className="px-6 py-4">
-                        <Badge variant="secondary" className="text-[10px] font-bold">{it.category}</Badge>
-                      </td>
-                      <td className="px-6 py-4 text-right font-display font-bold text-lg">{it.qty}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{fmtDate(it.borrowed_at)}</td>
-                      <td className="px-6 py-4 text-center">
-                        <Badge className="bg-warning text-warning-foreground font-bold text-[10px] uppercase">{t("borrowed") || "Borrowed"}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {borrowedItems.length === 0 && (
+                <div className="col-span-full py-16 text-center text-muted-foreground italic border-2 border-dashed rounded-2xl">{t("noItemsListed")}</div>
+              )}
+              {borrowedItems.map(it => (
+                <Card key={it.id} className="p-4 border-primary/5 hover:border-primary/20 transition-all shadow-sm">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="font-bold text-lg">{it.name}</div>
+                      <Badge variant="secondary" className="text-[9px] font-black uppercase px-2 mt-1">{it.category}</Badge>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] font-bold text-muted-foreground uppercase mb-1">{t("qty")}</div>
+                      <div className="font-display font-black text-2xl text-primary">{it.qty}</div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-primary/5">
+                    <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" /> {fmtDate(it.borrowed_at)}
+                    </div>
+                    <Badge className="bg-warning/10 text-warning border-warning/20 font-black text-[9px] uppercase px-3 py-1">
+                      {t("borrowed") || "Borrowed"}
+                    </Badge>
+                  </div>
+                </Card>
+              ))}
             </div>
           </section>
 
@@ -393,28 +388,30 @@ const ReturnDialog = ({ open, vendor, borrowedItems, onClose, t }: any) => {
         </DialogHeader>
         <div className="space-y-4 py-6">
           {borrowedItems.map((it: any) => (
-            <div key={it.id} className="grid grid-cols-12 gap-4 items-center bg-muted/20 p-4 rounded-xl border">
-              <div className="col-span-6">
-                <div className="font-bold">{it.name}</div>
-                <div className="text-[10px] text-muted-foreground uppercase">{it.category}</div>
+            <div key={it.id} className="flex flex-col sm:grid sm:grid-cols-12 gap-4 items-center bg-muted/20 p-4 rounded-xl border">
+              <div className="sm:col-span-6 w-full text-center sm:text-left">
+                <div className="font-bold text-lg">{it.name}</div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{it.category}</div>
               </div>
-              <div className="col-span-3">
-                <Label className="text-[10px] mb-1 block">{t("returnQty")}</Label>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setReturnQtys({...returnQtys, [it.id]: Math.max(0, returnQtys[it.id] - 1)})}><Minus className="h-3 w-3" /></Button>
-                  <span className="font-bold w-4 text-center">{returnQtys[it.id]}</span>
-                  <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setReturnQtys({...returnQtys, [it.id]: Math.min(it.qty, returnQtys[it.id] + 1)})}><Plus className="h-3 w-3" /></Button>
+              <div className="sm:col-span-3 w-full flex flex-col items-center sm:items-start">
+                <Label className="text-[10px] mb-2 font-black uppercase tracking-tighter opacity-60">{t("returnQty")}</Label>
+                <div className="flex items-center gap-4">
+                  <Button variant="outline" size="sm" className="h-10 w-10 p-0 rounded-full" onClick={() => setReturnQtys({...returnQtys, [it.id]: Math.max(0, returnQtys[it.id] - 1)})}><Minus className="h-4 w-4" /></Button>
+                  <span className="font-display font-black text-xl w-6 text-center">{returnQtys[it.id]}</span>
+                  <Button variant="outline" size="sm" className="h-10 w-10 p-0 rounded-full" onClick={() => setReturnQtys({...returnQtys, [it.id]: Math.min(it.qty, returnQtys[it.id] + 1)})}><Plus className="h-4 w-4" /></Button>
                 </div>
               </div>
-              <div className="col-span-3">
-                <Label className="text-[10px] mb-1 block">{t("charge")} (₹)</Label>
-                <Input 
-                  type="number" 
-                  placeholder="0" 
-                  value={charges[it.id] || ""} 
-                  onChange={(e) => setCharges({...charges, [it.id]: e.target.value})} 
-                  className="h-9 font-bold"
-                />
+              <div className="sm:col-span-3 w-full">
+                <Label className="text-[10px] mb-2 block font-black uppercase tracking-tighter opacity-60 text-center sm:text-left">{t("charge")} (₹)</Label>
+                <div className="relative">
+                  <Input 
+                    type="number" 
+                    placeholder="0" 
+                    value={charges[it.id] || ""} 
+                    onChange={(e) => setCharges({...charges, [it.id]: e.target.value})} 
+                    className="h-11 font-black text-center sm:text-left pl-4"
+                  />
+                </div>
               </div>
             </div>
           ))}

@@ -6,25 +6,117 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MessageCircle, FileText, ChevronDown } from "lucide-react";
+import { MessageCircle, FileText, ChevronDown, RefreshCcw, CheckCircle2 } from "lucide-react";
 import { fmtINR, fmtDate, statusTone } from "@/lib/format";
 import { useI18n } from "@/context/I18nContext";
+import { localDataService } from "@/services/localDataService";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import { generateInvoicePDF } from "@/lib/invoice";
 import {
   sendWhatsappConfirmation, sendWhatsappBalance, sendWhatsappStatus,
 } from "@/lib/whatsapp";
 import { PaymentRatingBadge } from "@/components/PaymentRatingBadge";
+import { BookingBill } from "@/components/BookingBill";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ReturnItemsDialog } from "@/components/bookings/ReturnItemsDialog";
+import { PaymentConfirmationDialog } from "@/components/bookings/PaymentConfirmationDialog";
 
 export const BookingDetailDrawer = ({
   open, onOpenChange, booking,
 }: { open: boolean; onOpenChange: (v: boolean) => void; booking: any | null }) => {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const [showBillPreview, setShowBillPreview] = useState(false);
+  const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [showPaymentCheck, setShowPaymentCheck] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const handleDeliver = async () => {
+    if (!booking) return;
+    setBusy(true);
+    try {
+      await localDataService.update("bookings", booking.id, { ...booking, status: "Delivered" });
+      toast.success("Items marked as delivered!");
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    } catch (err) {
+      toast.error("Failed to update status");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    if (!booking) return;
+
+    // Step 1: Check items pending return
+    const pendingItems = (booking.item_checklist || []).some((i: any) => !i.returned);
+    if (pendingItems) {
+      return toast.error("Cannot complete. Items are still pending return.");
+    }
+
+    const finalize = async () => {
+      setBusy(true);
+      try {
+        const updated = {
+          ...booking,
+          status: "Complete",
+          payment_status: "Paid",
+          remaining_amount: 0,
+          total_paid: booking.pricing?.totalAmount || booking.total_paid
+        };
+        await localDataService.update("bookings", booking.id, updated);
+        toast.success("Booking completed successfully!");
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        onOpenChange(false);
+      } catch (err) {
+        toast.error("Failed to complete booking");
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    // Step 2: Check payment balance
+    const currentBalance = Number(booking.remaining_amount || 0);
+    if (currentBalance > 0 && booking.payment_status !== 'Paid') {
+      setShowPaymentCheck(true);
+      return;
+    }
+
+    // Step 3: All returned and paid
+    await finalize();
+  };
+
+  const handleConfirmCompletion = async (confirmed: boolean) => {
+    if (confirmed) {
+      setBusy(true);
+      try {
+        const updated = {
+          ...booking,
+          status: "Complete",
+          payment_status: "Paid",
+          remaining_amount: 0,
+          total_paid: booking.pricing?.totalAmount || booking.total_paid
+        };
+        await localDataService.update("bookings", booking.id, updated);
+        toast.success("Booking completed successfully!");
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        onOpenChange(false);
+      } catch (err) {
+        toast.error("Failed to complete booking");
+      } finally {
+        setBusy(false);
+      }
+    }
+    setShowPaymentCheck(false);
+  };
   if (!booking) return null;
   const items: any[] = booking.items || [];
   const payments: any[] = booking.payments || [];
   const total = booking.pricing?.totalAmount || 0;
   const paid = Number(booking.total_paid || 0);
   const balance = Number(booking.remaining_amount ?? Math.max(0, total - paid));
+  const allReturned = (booking.item_checklist || []).every((i: any) => i.returned);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -38,9 +130,24 @@ export const BookingDetailDrawer = ({
         </SheetHeader>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => generateInvoicePDF(booking)}>
-            <FileText className="h-4 w-4 mr-1.5" /> {t("invoicePdf")}
+          <Button size="sm" variant="outline" onClick={() => setShowBillPreview(true)} className="bg-white hover:bg-muted font-bold border-primary/10">
+            <FileText className="h-4 w-4 mr-1.5 text-primary" /> View Invoice
           </Button>
+          {booking.status === "Confirmed" && (
+            <Button size="sm" variant="outline" className="bg-info/10 text-info border-info/20 hover:bg-info/20" onClick={handleDeliver} disabled={busy}>
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Mark Delivered
+            </Button>
+          )}
+          {!allReturned && (
+            <Button size="sm" variant="outline" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20" onClick={() => setShowReturnDialog(true)}>
+              <RefreshCcw className="h-4 w-4 mr-1.5" /> {t("markReturns") || "Mark Returns"}
+            </Button>
+          )}
+          {booking.status !== "Complete" && booking.status !== "Confirmed" && (
+            <Button size="sm" className="bg-primary hover:bg-primary/90 font-bold" onClick={handleComplete} disabled={busy}>
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete Booking
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" className="bg-success text-success-foreground hover:bg-success/90">
@@ -63,26 +170,28 @@ export const BookingDetailDrawer = ({
         </div>
 
         <div className="mt-5 space-y-5 text-sm">
-          <section>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t("customer")}</div>
-            <div className="font-medium">{booking.customer_name}</div>
-            <div className="text-muted-foreground">{booking.phone}</div>
-            <div className="text-muted-foreground mt-1 whitespace-pre-line">{booking.address}</div>
-          </section>
+          <div className="bg-muted/40 p-5 rounded-2xl border border-primary/5 space-y-5">
+            <section>
+              <div className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-2">{t("customer")}</div>
+              <div className="font-display text-xl font-bold">{booking.customer_name}</div>
+              <div className="text-muted-foreground font-medium">{booking.phone}</div>
+              <div className="text-muted-foreground mt-2 text-xs leading-relaxed whitespace-pre-line bg-white/50 p-3 rounded-xl border border-white/80">{booking.address || "No address provided."}</div>
+            </section>
 
-          <Separator />
+            <Separator className="bg-primary/5" />
 
-          <section className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">{t("eventDates")}</div>
-              <div>{fmtDate(booking.start_date)} → {fmtDate(booking.end_date)}</div>
-              {booking.event_time && <div className="text-muted-foreground">{booking.event_time}</div>}
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">{t("pricingMode")}</div>
-              <div>{booking.delivery_mode === "Takeaway" ? t("takeaway") : t("delivery")}</div>
-            </div>
-          </section>
+            <section className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-1">{t("eventDates")}</div>
+                <div className="font-bold text-sm">{fmtDate(booking.start_date)}</div>
+                <div className="text-[10px] opacity-60">To {fmtDate(booking.expected_return_date || booking.return_date)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-1">{t("pricingMode")}</div>
+                <Badge variant="secondary" className="font-bold uppercase text-[10px]">{booking.pricing_mode || "Takeaway"}</Badge>
+              </div>
+            </section>
+          </div>
 
           <Separator />
 
@@ -103,10 +212,21 @@ export const BookingDetailDrawer = ({
 
           <Separator />
 
-          <section className="space-y-1">
-            <div className="flex justify-between"><span>{t("total")}</span><span className="font-medium">{fmtINR(total)}</span></div>
-            <div className="flex justify-between"><span>{t("paid")}</span><span className="text-success">{fmtINR(paid)}</span></div>
-            <div className="flex justify-between"><span>{t("balance")}</span><span className="text-destructive">{fmtINR(balance)}</span></div>
+          <section className="space-y-2 bg-primary/5 p-4 rounded-xl border border-primary/10">
+            <div className="flex justify-between text-xs font-medium opacity-60"><span>Subtotal</span><span>{fmtINR(booking.pricing?.subtotal || 0)}</span></div>
+            {Number(booking.pricing?.deliveryCharge) > 0 && (
+              <div className="flex justify-between text-xs font-medium opacity-60"><span>Delivery Charge</span><span>{fmtINR(booking.pricing.deliveryCharge)}</span></div>
+            )}
+            {Number(booking.pricing?.discount) > 0 && (
+              <div className="flex justify-between text-xs font-medium text-destructive"><span>Discount (-)</span><span>{fmtINR(booking.pricing.discount)}</span></div>
+            )}
+            <Separator className="bg-primary/10 my-1" />
+            <div className="flex justify-between font-bold text-base"><span>{t("total")}</span><span className="text-primary">{fmtINR(total)}</span></div>
+            <div className="flex justify-between font-bold"><span>{t("paid")}</span><span className="text-success">{fmtINR(paid || (total - balance))}</span></div>
+            <div className="flex justify-between font-bold"><span>{t("balance")}</span><span className="text-destructive">{fmtINR(balance)}</span></div>
+          </section>
+
+          <section className="space-y-2">
             <div className="flex justify-between items-center pt-1">
               <span className="text-xs uppercase text-muted-foreground">{t("payment")}</span>
               <Badge variant="outline" className={statusTone[booking.payment_status] || ""}>{t(booking.payment_status) || booking.payment_status}</Badge>
@@ -148,6 +268,27 @@ export const BookingDetailDrawer = ({
           )}
         </div>
       </SheetContent>
+
+      <Dialog open={showBillPreview} onOpenChange={setShowBillPreview}>
+        <DialogContent className="max-w-[850px] max-h-[90vh] overflow-y-auto p-0 border-none shadow-2xl">
+          <BookingBill 
+            onClose={() => setShowBillPreview(false)}
+            booking={booking} 
+          />
+        </DialogContent>
+      </Dialog>
+
+      <ReturnItemsDialog 
+        open={showReturnDialog}
+        onClose={() => setShowReturnDialog(false)}
+        booking={booking}
+      />
+
+      <PaymentConfirmationDialog 
+        open={showPaymentCheck}
+        balance={Number(booking.remaining_amount || 0)}
+        onClose={handleConfirmCompletion}
+      />
     </Sheet>
   );
 };

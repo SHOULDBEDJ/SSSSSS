@@ -212,68 +212,49 @@ const Inventory = () => {
 
 const ItemTable = ({ items, onEdit, onDelete, t }: any) => {
   return (
-    <div className="rounded-xl border bg-card shadow-sm overflow-hidden border-primary/5">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-[10px] uppercase tracking-widest text-muted-foreground font-bold border-b">
-            <tr>
-              <th className="text-left px-6 py-4">{t("itemCatalogName")}</th>
-              <th className="text-right px-6 py-4">{t("takeawayPrice")}</th>
-              <th className="text-right px-6 py-4">{t("deliveryPrice")}</th>
-              <th className="text-right px-6 py-4">{t("currentStock")}</th>
-              <th className="text-right px-6 py-4">{t("actions")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-primary/5">
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center text-muted-foreground py-12 italic text-sm">
-                  {t("noItemsListed")}
-                </td>
-              </tr>
-            )}
-            {items.map((i: any) => {
-              const isLow = Number(i.available_quantity) <= Number(i.low_stock_threshold || 2);
-              return (
-                <tr key={i.id} className="hover:bg-muted/30 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-foreground text-base">{i.name}</div>
-                    {i.name_kn && <div className="text-[10px] font-bold text-muted-foreground uppercase mt-1">{i.name_kn}</div>}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {i.price_takeaway !== null ? (
-                      <span className="font-display font-bold text-primary">{fmtINR(i.price_takeaway)}</span>
-                    ) : (
-                      <span className="text-muted-foreground italic text-xs">{t("none")}</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {i.price_delivery !== null ? (
-                      <span className="font-display font-bold text-accent">{fmtINR(i.price_delivery)}</span>
-                    ) : (
-                      <span className="text-muted-foreground italic text-xs">{t("none")}</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex flex-col items-end">
-                      <div className={`px-2 py-0.5 rounded text-xs font-bold ${isLow ? "bg-destructive/10 text-destructive animate-pulse" : "bg-success/10 text-success"}`}>
-                        {i.available_quantity} {t("available")}
-                      </div>
-                      <div className="text-[9px] text-muted-foreground uppercase font-bold mt-1">Total: {i.total_quantity}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => onEdit(i)} className="h-8 w-8 p-0"><Pencil className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10" onClick={() => onDelete(i.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {items.length === 0 && (
+        <div className="col-span-full py-12 text-center text-muted-foreground italic border-2 border-dashed rounded-2xl bg-muted/20">
+          {t("noItemsListed")}
+        </div>
+      )}
+      {items.map((i: any) => {
+        const isLow = Number(i.available_quantity) <= Number(i.low_stock_threshold || 2);
+        return (
+          <Card key={i.id} className="group relative overflow-hidden hover:border-primary/50 transition-all shadow-sm">
+            <div className="p-5 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-bold text-lg leading-tight">{i.name}</h4>
+                  {i.name_kn && <div className="text-[10px] font-bold text-muted-foreground uppercase mt-1">{i.name_kn}</div>}
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="sm" onClick={() => onEdit(i)} className="h-8 w-8 p-0"><Pencil className="h-3.5 w-3.5" /></Button>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10" onClick={() => onDelete(i.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 py-3 border-y border-primary/5">
+                <div className="space-y-0.5">
+                  <div className="text-[9px] font-bold uppercase tracking-tighter text-muted-foreground opacity-60">{t("takeawayPrice")}</div>
+                  <div className="font-display font-bold text-primary">{i.price_takeaway !== null ? fmtINR(i.price_takeaway) : "—"}</div>
+                </div>
+                <div className="space-y-0.5 text-right">
+                  <div className="text-[9px] font-bold uppercase tracking-tighter text-muted-foreground opacity-60">{t("deliveryPrice")}</div>
+                  <div className="font-display font-bold text-accent">{i.price_delivery !== null ? fmtINR(i.price_delivery) : "—"}</div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isLow ? "bg-destructive/10 text-destructive animate-pulse" : "bg-success/10 text-success"}`}>
+                  {i.available_quantity} / {i.total_quantity} {t("inStock") || "In Stock"}
+                </div>
+                {isLow && <AlertTriangle className="h-4 w-4 text-destructive animate-bounce" />}
+              </div>
+            </div>
+          </Card>
+        );
+      })}
     </div>
   );
 };
@@ -303,17 +284,22 @@ const ItemDialog = ({ open, item, categories, onClose, t }: any) => {
 
   const save = async () => {
     if (!name) return toast.error("Item name is required");
-    const t = Number(total);
-    const a = Number(available);
-    if (isNaN(t) || t < 0) return toast.error("Total stock must be a positive number");
-    if (a > t) return toast.error("Available stock cannot exceed total stock");
+    const newTotal = Number(total);
+    if (isNaN(newTotal) || newTotal < 0) return toast.error("Stock quantity must be a positive number");
+
+    let finalAvailable = newTotal;
+    if (item) {
+      // Preserve the difference (items that are currently out on bookings)
+      const outQty = Number(item.total_quantity || 0) - Number(item.available_quantity || 0);
+      finalAvailable = Math.max(0, newTotal - outQty);
+    }
 
     const payload: any = {
       name, 
       name_kn: nameKn || null,
       category_id: catId === "none" ? null : catId,
-      total_quantity: t, 
-      available_quantity: a,
+      total_quantity: newTotal, 
+      available_quantity: finalAvailable,
       price_takeaway: priceTake === "" ? null : Math.max(0, Number(priceTake)),
       price_delivery: priceDel === "" ? null : Math.max(0, Number(priceDel)),
       low_stock_threshold: Number(lowStock),
@@ -362,15 +348,12 @@ const ItemDialog = ({ open, item, categories, onClose, t }: any) => {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-xl border border-dashed">
-            <div className="space-y-1.5 text-center">
-              <Label className="text-[10px] font-bold uppercase tracking-tighter">{t("totalQtyAlt")}</Label>
-              <Input type="number" min={0} value={total} onChange={(e) => setTotal(e.target.value)} className="h-10 text-center font-bold" />
+          <div className="p-4 bg-muted/30 rounded-xl border border-dashed flex items-center justify-between">
+            <div className="space-y-1">
+              <Label className="text-xs font-bold uppercase tracking-widest opacity-60">{t("totalStock") || "Total Stock Quantity"}</Label>
+              <p className="text-[10px] text-muted-foreground italic">Manage your total warehouse count here</p>
             </div>
-            <div className="space-y-1.5 text-center">
-              <Label className="text-[10px] font-bold uppercase tracking-tighter">{t("available")}</Label>
-              <Input type="number" min={0} value={available} onChange={(e) => setAvailable(e.target.value)} className="h-10 text-center font-bold text-success" />
-            </div>
+            <Input type="number" min={0} value={total} onChange={(e) => setTotal(e.target.value)} className="h-12 w-32 text-center text-2xl font-black border-primary/20" />
           </div>
 
           <div className="grid grid-cols-2 gap-6 pt-2">

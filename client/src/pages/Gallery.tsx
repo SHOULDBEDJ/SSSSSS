@@ -255,9 +255,6 @@ const Gallery = () => {
         actions={
           !selectedAlbum && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setOpenCat(true)}>
-                <FolderPlus className="h-4 w-4 mr-2" /> New Category
-              </Button>
               <Button onClick={() => setOpenAlbum(true)} className="bg-primary hover:bg-primary/90">
                 <Images className="h-4 w-4 mr-2" /> Create Album
               </Button>
@@ -310,7 +307,7 @@ const Gallery = () => {
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {filteredAlbums.length === 0 && (
               <div className="col-span-full py-20 text-center text-muted-foreground italic bg-muted/20 rounded-2xl border-2 border-dashed">
                 <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-10" />
@@ -331,21 +328,21 @@ const Gallery = () => {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center opacity-20"><ImageIcon className="h-12 w-12" /></div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
-                    <div className="absolute bottom-0 left-0 p-5 w-full text-white">
-                      <Badge variant="outline" className="text-[9px] uppercase font-bold mb-2 border-white/40 text-white">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+                    <div className="absolute bottom-0 left-0 p-3 sm:p-5 w-full text-white">
+                      <Badge variant="outline" className="text-[8px] sm:text-[9px] uppercase font-bold mb-1 sm:mb-2 border-white/40 text-white">
                         {categories.find(c => c.id === album.category_id)?.name || "Uncategorized"}
                       </Badge>
-                      <h3 className="text-xl font-display font-bold truncate">{album.name}</h3>
-                      <div className="text-xs text-white/60 mt-1 font-semibold">{count} Photos</div>
+                      <h3 className="text-sm sm:text-xl font-display font-bold truncate leading-tight">{album.name}</h3>
+                      <div className="text-[10px] sm:text-xs text-white/60 mt-0.5 font-semibold">{count} Photos</div>
                     </div>
                   </div>
-                  <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                    <Button variant="secondary" size="icon" className="h-8 w-8 bg-white/90 backdrop-blur" onClick={(e) => { e.stopPropagation(); setEditAlbum(album); setOpenAlbum(true); }}>
-                      <Pencil className="h-4 w-4" />
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                    <Button variant="secondary" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 bg-white/90 backdrop-blur" onClick={(e) => { e.stopPropagation(); setEditAlbum(album); setOpenAlbum(true); }}>
+                      <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
-                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); deleteAlbum(album.id); }}>
-                      <Trash2 className="h-4 w-4" />
+                    <Button variant="destructive" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={(e) => { e.stopPropagation(); deleteAlbum(album.id); }}>
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </Card>
@@ -423,7 +420,12 @@ const Gallery = () => {
               <Input value={albumNameInput} onChange={(e) => setAlbumNameInput(e.target.value)} placeholder="e.g. Wedding Setup @ Palace" className="h-11" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs uppercase font-bold text-muted-foreground">Select Category</Label>
+              <div className="flex justify-between items-center">
+                <Label className="text-xs uppercase font-bold text-muted-foreground">Select Category</Label>
+                <Button variant="link" size="sm" onClick={() => setOpenCat(true)} className="h-auto p-0 text-[10px] font-bold text-primary">
+                  + Add New Category
+                </Button>
+              </div>
               <Select value={albumCatInput} onValueChange={setAlbumCatInput}>
                 <SelectTrigger className="h-11"><SelectValue placeholder="Pick Category" /></SelectTrigger>
                 <SelectContent>

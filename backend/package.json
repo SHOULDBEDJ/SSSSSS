@@ -2,12 +2,12 @@
   "name": "smart-tailor-backend",
   "version": "1.0.0",
   "description": "Backend for Smart Tailor Platform",
-  "main": "server.js",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "migrate": "node migrate.js"
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "init-db": "node src/db/index.js"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",

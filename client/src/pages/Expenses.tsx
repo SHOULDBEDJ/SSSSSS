@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Wallet, Calendar, Receipt } from "lucide-react";
 import { fmtINR, fmtDate, monthStartISO, todayISO } from "@/lib/format";
 import { toast } from "sonner";
@@ -84,27 +86,58 @@ const Expenses = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card shadow-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-            <tr><th className="text-left px-5 py-3">{t("date")}</th><th className="text-left px-5 py-3">{t("type")}</th><th className="text-left px-5 py-3">{t("notes")}</th><th className="text-left px-5 py-3">{t("methodAlt")}</th><th className="text-right px-5 py-3">{t("amount")}</th><th /></tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">{t("noExpensesMatch")}</td></tr>}
-            {filtered.map((e) => (
-              <tr key={e.id} className="border-t hover:bg-muted/30">
-                <td className="px-5 py-3">{fmtDate(e.date)}</td>
-                <td className="px-5 py-3">{e.category || "—"}</td>
-                <td className="px-5 py-3 text-muted-foreground">{e.description || "—"}</td>
-                <td className="px-5 py-3">{e.payment_method}</td>
-                <td className="px-5 py-3 text-right font-medium">{fmtINR(e.amount)}</td>
-                <td className="px-3 text-right whitespace-nowrap">
-                  <Button variant="ghost" size="sm" onClick={() => remove(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.length === 0 && (
+          <div className="col-span-full py-20 text-center text-muted-foreground italic border-2 border-dashed rounded-3xl bg-muted/20">
+            {t("noExpensesMatch")}
+          </div>
+        )}
+        {filtered.map((e) => (
+          <Card key={e.id} className="group relative overflow-hidden hover:border-primary/50 transition-all shadow-sm border-primary/5">
+            <div className="p-5 space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-primary/10 p-1.5 rounded-lg text-primary">
+                      <Wallet className="h-4 w-4" />
+                    </div>
+                    <span className="font-black text-sm uppercase tracking-wider">{e.category || "General"}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" /> {fmtDate(e.date)}
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => remove(e.id)}
+                  className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="py-4 border-y border-primary/5">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60 mb-1">{t("amount")}</div>
+                <div className="text-3xl font-display font-black text-foreground">{fmtINR(e.amount)}</div>
+              </div>
+
+              <div className="space-y-3">
+                {e.description && (
+                  <p className="text-xs text-muted-foreground italic leading-relaxed">
+                    "{e.description}"
+                  </p>
+                )}
+                <div className="flex justify-between items-center">
+                  <div className="text-[9px] font-bold uppercase tracking-tighter text-muted-foreground opacity-60">{t("methodAlt")}</div>
+                  <Badge variant="outline" className="text-[9px] font-black uppercase px-3 py-1 bg-muted/50 border-primary/10">
+                    {e.payment_method}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
       </div>
     </>
   );

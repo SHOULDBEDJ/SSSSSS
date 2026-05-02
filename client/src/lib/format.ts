@@ -20,20 +20,16 @@ export const monthStartISO = () => {
 };
 
 export const statusTone: Record<string, string> = {
-  Incoming: "bg-info/15 text-info border-info/30",
   Confirmed: "bg-accent/20 text-accent-foreground border-accent/40",
-  Ready: "bg-warning/20 text-warning-foreground border-warning/40",
-  "Out for Delivery": "bg-info/20 text-info border-info/40",
   Delivered: "bg-success/15 text-success border-success/30",
-  "Time to Pickup": "bg-warning/20 text-warning-foreground border-warning/40",
-  Returned: "bg-muted text-muted-foreground border-border",
-  "Late Return": "bg-destructive/15 text-destructive border-destructive/30",
-  "Partially Returned": "bg-warning/20 text-warning-foreground border-warning/40",
-  "Pending Items + Amount Balance": "bg-destructive/15 text-destructive border-destructive/30",
-  "Only Pending Items": "bg-warning/20 text-warning-foreground border-warning/40",
-  "Only Amount Balance": "bg-warning/20 text-warning-foreground border-warning/40",
+  "Pending Items": "bg-warning/20 text-warning-foreground border-warning/40",
+  "Return + Paid": "bg-success/20 text-success border-success/40",
+  "Return + Pending": "bg-warning/20 text-warning-foreground border-warning/40",
+  "Return but Not Paid": "bg-destructive/15 text-destructive border-destructive/30",
+  "Return but Half Paid": "bg-warning/20 text-warning-foreground border-warning/40",
+  Complete: "bg-success/20 text-success font-black border-success/40 shadow-sm",
+  // Payment Statuses
   Paid: "bg-success/15 text-success border-success/30",
   Partial: "bg-warning/20 text-warning-foreground border-warning/40",
-  Unpaid: "bg-destructive/15 text-destructive border-destructive/30",
-  Complete: "bg-success/20 text-success font-black border-success/40",
+  Pending: "bg-destructive/15 text-destructive border-destructive/30",
 };

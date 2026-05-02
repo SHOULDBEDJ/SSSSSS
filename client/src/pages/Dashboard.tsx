@@ -6,18 +6,20 @@ import { StatCard } from "@/components/StatCard";
 import { fmtINR, fmtDate, todayISO, monthStartISO, statusTone } from "@/lib/format";
 import {
   CalendarCheck2, Inbox, Wallet, TrendingUp, AlertTriangle, PackageX,
-  IndianRupee, Activity, ChevronLeft, ChevronRight, Plus, X,
+  IndianRupee, Activity, ChevronLeft, ChevronRight, Plus, X, RefreshCcw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BookingDetailDrawer } from "@/components/BookingDetailDrawer";
+import { CreateBookingDialog } from "@/components/bookings/CreateBookingDialog";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useI18n } from "@/context/I18nContext";
 
-type CardKey = "bookingsToday" | "incoming" | "notReturned" | "todayCollection" | "monthlyRevenue" | "monthlyExpenses" | "profit" | "todayCollectionAlt";
+type CardKey = "bookingsToday" | "incoming" | "notReturned" | "todayCollection" | "monthlyRevenue" | "monthlyExpenses" | "profit" | "todayCollectionAlt" | "returnDue";
 
 const dotForStatus: Record<string, string> = {
   Incoming: "bg-info",
@@ -41,6 +43,9 @@ const Dashboard = () => {
   const [drawerBooking, setDrawerBooking] = useState<any | null>(null);
   const [cardDrill, setCardDrill] = useState<{ key: CardKey; title: string; rows: any[] } | null>(null);
   const [dateDrill, setDateDrill] = useState<{ date: string; rows: any[] } | null>(null);
+  const [returnDueDrill, setReturnDueDrill] = useState<{ rows: any[] } | null>(null);
+  const [showReturnDuePopup, setShowReturnDuePopup] = useState(false);
+  const [openCreate, setOpenCreate] = useState<boolean>(false);
 
   // Calendar month cursor
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
@@ -68,7 +73,14 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    loadData();
+    loadData().then(() => {
+      // Check session storage to show popup once per session
+      const shown = sessionStorage.getItem("return_due_popup_shown");
+      if (!shown) {
+        setShowReturnDuePopup(true);
+        sessionStorage.setItem("return_due_popup_shown", "true");
+      }
+    });
   }, []);
 
   const today = todayISO();
@@ -92,9 +104,24 @@ const Dashboard = () => {
       });
     });
     const todayCollection = todayPayments.reduce((s, p) => s + p.amount, 0);
+
+    const returnDueRows = bookings.filter(b => {
+      if (!b.expected_return_date) return false;
+      const todayDate = new Date();
+      todayDate.setHours(0,0,0,0);
+      const returnDate = new Date(b.expected_return_date);
+      returnDate.setHours(0,0,0,0);
+      
+      const isOverdue = todayDate >= returnDate;
+      const finishedStatuses = ["Complete", "Return + Paid", "Return + Pending", "Return but Not Paid", "Return but Half Paid"];
+      const isFinished = finishedStatuses.includes(b.status);
+      
+      return isOverdue && !isFinished;
+    });
+
     return {
       bookingsToday, incoming, notReturned, monthlyRevenue, monthlyExpenses, todayExpenses, todayCollection,
-      monthlyRevenueRows, todayExpenseRows, todayPayments,
+      monthlyRevenueRows, todayExpenseRows, todayPayments, returnDueRows
     };
   }, [bookings, expenses, today, monthStart]);
 
@@ -125,6 +152,7 @@ const Dashboard = () => {
       monthlyExpenses: { title: t("monthlyExpenses"), rows: [] },
       profit: { title: t("profitMonth"), rows: [] },
       todayCollectionAlt: { title: t("todayCollection"), rows: stats.todayPayments.map((p) => p.booking) },
+      returnDue: { title: "Return Due Today", rows: stats.returnDueRows }
     };
     setCardDrill({ key, ...map[key] });
   };
@@ -160,10 +188,15 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-8">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-8">
         <button className="text-left" onClick={() => openCard("bookingsToday")}>
           <StatCard label={t("bookingsToday")} value={stats.bookingsToday.length} icon={CalendarCheck2} tone="accent" />
         </button>
+        {stats.returnDueRows.length > 0 && (
+          <button className="text-left" onClick={() => openCard("returnDue")}>
+            <StatCard label="Return Due Today" value={stats.returnDueRows.length} icon={RefreshCcw} tone="destructive" />
+          </button>
+        )}
         <button className="text-left" onClick={() => openCard("incoming")}>
           <StatCard label={t("incomingOrders")} value={stats.incoming.length} icon={Inbox} tone="warning" />
         </button>
@@ -174,6 +207,9 @@ const Dashboard = () => {
           <StatCard label={t("netToday")} value={fmtINR(stats.todayCollection - stats.todayExpenses)} icon={Activity}
             hint={`${fmtINR(stats.todayCollection)} ${t("income")} · ${fmtINR(stats.todayExpenses)} ${t("expense")}`} />
         </button>
+      </div>
+      
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-8">
         <button className="text-left" onClick={() => openCard("monthlyRevenue")}>
           <StatCard label={t("monthlyRevenue")} value={fmtINR(stats.monthlyRevenue)} icon={IndianRupee} tone="success" />
         </button>
@@ -303,7 +339,7 @@ const Dashboard = () => {
               <div className="text-center py-10">
                 <p className="text-muted-foreground mb-4">{t("noBookingsMatch")}</p>
                 <p className="text-sm mb-6">{t("newBookingQuestion") || "Do you want to take a booking?"}</p>
-                <Button className="bg-primary hover:bg-primary/90" onClick={() => { setDateDrill(null); nav("/bookings"); }}>
+                <Button className="bg-primary hover:bg-primary/90" onClick={() => { setDateDrill(null); setOpenCreate(true); }}>
                   <Plus className="mr-2 h-4 w-4" /> {t("newBooking")}
                 </Button>
               </div>
@@ -352,29 +388,101 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-2">
                 {cardDrill?.rows.map((b: any) => (
-                  <button
+                  <div
                     key={b.id}
-                    onClick={() => { setDrawerBooking(b); setCardDrill(null); }}
-                    className="w-full text-left border rounded-lg p-3 hover:bg-muted/30 transition-colors"
+                    className="w-full text-left border rounded-xl p-4 hover:bg-muted/30 transition-all space-y-4"
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-2 border-b pb-3">
                       <div className="min-w-0">
-                        <div className="font-medium truncate">{b.customer_name}</div>
-                        <div className="text-xs text-muted-foreground">{b.booking_id} · {fmtDate(b.start_date)}</div>
+                        <div className="font-bold text-lg truncate text-primary">{b.customer_name}</div>
+                        <div className="text-xs font-mono opacity-60 font-bold uppercase tracking-widest">{b.booking_id} · {b.phone}</div>
                       </div>
-                      <Badge variant="outline" className={statusTone[b.status] || ""}>{t(b.status) || b.status}</Badge>
+                      <div className="flex flex-col gap-1 items-end">
+                        <Badge variant="outline" className={`font-black text-[10px] uppercase ${statusTone[b.status] || ""}`}>{t(b.status) || b.status}</Badge>
+                        <Badge variant="outline" className={`font-black text-[10px] uppercase ${statusTone[b.payment_status] || ""}`}>{t(b.payment_status) || b.payment_status}</Badge>
+                      </div>
                     </div>
-                    <div className="text-sm mt-2 flex justify-between">
-                      <span className="text-muted-foreground">{b.phone}</span>
-                      <span className="font-medium">{fmtINR(b.pricing?.totalAmount || 0)}</span>
+
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-1">
+                        <div className="opacity-60 font-bold uppercase tracking-tighter">Items</div>
+                        <div className="font-bold">{b.items?.length || 0} Records</div>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <div className="opacity-60 font-bold uppercase tracking-tighter">Booking Date</div>
+                        <div className="font-bold">{fmtDate(b.booking_date)}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="opacity-60 font-bold uppercase tracking-tighter">Expected Return</div>
+                        <div className="font-bold text-destructive">{fmtDate(b.expected_return_date || b.return_date)}</div>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <div className="opacity-60 font-bold uppercase tracking-tighter">Days Booked</div>
+                        <div className="font-bold">{b.number_of_days || 1} Days</div>
+                      </div>
                     </div>
-                  </button>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1 text-[10px] font-black uppercase h-9 border-primary/20 hover:bg-primary hover:text-white"
+                        onClick={() => { setDrawerBooking(b); setCardDrill(null); }}
+                      >
+                        Details
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        className="flex-1 text-[10px] font-black uppercase h-9"
+                        onClick={() => { setOpenCreate(b); setCardDrill(null); }}
+                      >
+                        Extend / Extra
+                      </Button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Return Due Alert Popup */}
+      <Dialog open={showReturnDuePopup && stats.returnDueRows.length > 0} onOpenChange={setShowReturnDuePopup}>
+        <DialogContent className="max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-6 w-6" /> Return Due Alert
+            </SheetTitle>
+          </SheetHeader>
+          <div className="py-6 space-y-4">
+            <p className="font-bold">{stats.returnDueRows.length} bookings are due for return today.</p>
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-widest opacity-60 font-bold">Customers still pending return:</p>
+              {stats.returnDueRows.slice(0, 5).map((b, idx) => (
+                <div key={idx} className="flex justify-between items-center text-sm p-2 bg-muted rounded">
+                  <div className="font-medium">{b.customer_name}</div>
+                  <div className="text-xs opacity-60">{b.items?.length || 0} items · {b.number_of_days || 1} days</div>
+                </div>
+              ))}
+              {stats.returnDueRows.length > 5 && (
+                <p className="text-xs text-muted-foreground italic">+ {stats.returnDueRows.length - 5} more...</p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button className="flex-1 bg-primary font-bold" onClick={() => { setShowReturnDuePopup(false); openCard("returnDue"); }}>
+              View All Details
+            </Button>
+            <Button variant="ghost" className="flex-1 font-bold" onClick={() => setShowReturnDuePopup(false)}>
+              Dismiss
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New booking dialog */}
+      <CreateBookingDialog open={openCreate} onClose={() => setOpenCreate(false)} />
     </>
   );
 };

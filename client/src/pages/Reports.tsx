@@ -269,44 +269,38 @@ const Reports = () => {
 
         {/* Main Report Area */}
         <div className="lg:col-span-3">
-          <Card className="overflow-hidden border-none shadow-elegant bg-card/50 backdrop-blur-sm" ref={reportRef}>
-            <div className="bg-muted/30 px-6 py-4 border-b flex justify-between items-center">
-              <h3 className="font-display font-bold text-lg flex items-center gap-2">
-                {t(type)}
-                <Badge variant="outline" className="ml-2 font-mono text-[10px]">{reportData.rows.length} {t("records")}</Badge>
-              </h3>
-              <div className="relative w-48">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                <Input placeholder={t("quickSearch")} className="pl-7 h-8 text-xs bg-transparent" />
+          <Card className="overflow-hidden border-none shadow-elegant bg-card/50 backdrop-blur-sm p-4 sm:p-8" ref={reportRef}>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b pb-6">
+              <div className="space-y-1">
+                <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary/60">{t("businessIntelligence")}</div>
+                <h3 className="font-display font-black text-3xl flex items-center gap-3 capitalize">
+                  {t(type)}
+                  <Badge className="bg-primary/10 text-primary border-primary/20 font-mono text-xs px-3">{reportData.rows.length} {t("records")}</Badge>
+                </h3>
+              </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder={t("quickSearch")} className="pl-10 h-11 bg-white/50 backdrop-blur-sm border-primary/5 focus:border-primary/30 rounded-xl shadow-sm" />
               </div>
             </div>
             
-            <div className="overflow-x-auto min-h-[500px]">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/10 text-[10px] uppercase tracking-widest text-muted-foreground font-bold border-b">
-                  {renderHeaders(type, t)}
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {reportData.rows.length === 0 && (
-                    <tr>
-                      <td colSpan={10} className="py-20 text-center text-muted-foreground italic">
-                        {t("noBookingsMatch")}
-                      </td>
-                    </tr>
-                  )}
-                  {reportData.rows.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-primary/5 transition-colors group">
-                      {renderRow(type, row, t)}
-                    </tr>
-                  ))}
-                </tbody>
-                {reportData.rows.length > 0 && (
-                  <tfoot className="bg-muted/30 font-bold border-t-2 border-primary/10">
-                    {renderFooter(type, reportData, t)}
-                  </tfoot>
-                )}
-              </table>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4">
+              {reportData.rows.length === 0 && (
+                <div className="col-span-full py-32 text-center text-muted-foreground italic border-4 border-dashed rounded-[2rem] bg-muted/20">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p className="text-xl font-medium">{t("noBookingsMatch")}</p>
+                </div>
+              )}
+              {reportData.rows.map((row, idx) => (
+                <ReportCard key={idx} type={type} row={row} t={t} />
+              ))}
             </div>
+
+            {reportData.rows.length > 0 && (
+              <div className="mt-12 pt-8 border-t-4 border-primary/5 space-y-4">
+                {renderFooter(type, reportData, t)}
+              </div>
+            )}
           </Card>
         </div>
       </div>
@@ -314,62 +308,142 @@ const Reports = () => {
   );
 };
 
-// --- TABLE RENDERING HELPERS ---
+// --- RESPONSIVE CARD COMPONENT ---
 
-const renderHeaders = (type: ReportType, t: any) => {
+const ReportCard = ({ type, row, t }: { type: ReportType, row: any, t: any }) => {
   switch (type) {
     case "income":
-      return <tr><th className="text-left px-6 py-4">{t("date")}</th><th className="text-left px-6 py-4">{t("customer")}</th><th className="text-left px-6 py-4">{t("type")}</th><th className="text-left px-6 py-4">{t("method")}</th><th className="text-right px-6 py-4">{t("amount")}</th></tr>;
+      return (
+        <Card className="p-5 border-success/10 hover:border-success/30 transition-all shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div className="space-y-1">
+              <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">{fmtDate(row.date)}</div>
+              <h4 className="font-bold text-lg leading-tight">{row.customer}</h4>
+            </div>
+            <Badge variant="outline" className="bg-success/10 text-success border-success/20 font-black text-[9px] uppercase px-3">{row.type}</Badge>
+          </div>
+          <div className="flex justify-between items-end pt-4 border-t border-success/5">
+            <div className="text-[10px] font-bold text-muted-foreground uppercase">{row.method}</div>
+            <div className="text-2xl font-display font-black text-success">{fmtINR(row.amount)}</div>
+          </div>
+        </Card>
+      );
     case "expense":
-      return <tr><th className="text-left px-6 py-4">{t("date")}</th><th className="text-left px-6 py-4">{t("category")}</th><th className="text-left px-6 py-4">{t("description")}</th><th className="text-right px-6 py-4">{t("amount")}</th></tr>;
+      return (
+        <Card className="p-5 border-destructive/10 hover:border-destructive/30 transition-all shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div className="space-y-1">
+              <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">{fmtDate(row.date)}</div>
+              <h4 className="font-bold text-lg leading-tight">{row.category || t("none")}</h4>
+            </div>
+            <div className="bg-destructive/10 p-2 rounded-lg text-destructive"><TrendingDown className="h-4 w-4" /></div>
+          </div>
+          <p className="text-xs text-muted-foreground italic line-clamp-1 mb-4">"{row.description || "—"}"</p>
+          <div className="flex justify-end pt-4 border-t border-destructive/5">
+            <div className="text-2xl font-display font-black text-destructive">{fmtINR(row.amount)}</div>
+          </div>
+        </Card>
+      );
     case "booking":
     case "pending_payments":
     case "overdue_balance":
-      return <tr><th className="text-left px-6 py-4">{t("bookings")} ID</th><th className="text-left px-6 py-4">{t("customer")}</th><th className="text-left px-6 py-4">{t("date")}</th><th className="text-right px-6 py-4">{t("total")}</th><th className="text-right px-6 py-4">{t("paid")}</th><th className="text-right px-6 py-4">{t("balance")}</th><th className="text-left px-6 py-4">{t("status")}</th></tr>;
+      return (
+        <Card className="p-5 border-primary/10 hover:border-primary/30 transition-all shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div className="space-y-1">
+              <div className="text-[10px] font-black uppercase tracking-widest text-primary/60">{row.booking_id}</div>
+              <h4 className="font-bold text-lg leading-tight">{row.customer_name}</h4>
+              <div className="text-xs text-muted-foreground font-medium">{fmtDate(row.booking_date || row.start_date)}</div>
+            </div>
+            <Badge variant="outline" className={`font-black text-[9px] uppercase px-3 border-2 ${statusTone[row.status]}`}>{t(row.status) || row.status}</Badge>
+          </div>
+          <div className="grid grid-cols-3 gap-2 py-4 border-y border-primary/5 my-4">
+            <div className="text-center">
+              <div className="text-[9px] font-bold text-muted-foreground uppercase opacity-60 mb-1">{t("total")}</div>
+              <div className="font-bold text-sm">{fmtINR(row.pricing?.totalAmount)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[9px] font-bold text-muted-foreground uppercase opacity-60 mb-1">{t("paid")}</div>
+              <div className="font-bold text-sm text-success">{fmtINR(row.total_paid || row.pricing?.advance || 0)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[9px] font-bold text-muted-foreground uppercase opacity-60 mb-1">{t("balance")}</div>
+              <div className="font-bold text-sm text-destructive">{fmtINR(row.remaining_amount)}</div>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${Number(row.remaining_amount) > 0 ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"}`}>
+              {Number(row.remaining_amount) > 0 ? t("paymentPending") || "Payment Pending" : t("fullyPaid") || "Fully Paid"}
+            </div>
+          </div>
+        </Card>
+      );
     case "vendor_borrowed":
-      return <tr><th className="text-left px-6 py-4">{t("itemCatalogName")}</th><th className="text-left px-6 py-4">{t("vendors")}</th><th className="text-right px-6 py-4">{t("vendorBorrowed")}</th></tr>;
+      return (
+        <Card className="p-5 border-primary/10 hover:border-primary/30 transition-all shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <div className="bg-primary/10 p-3 rounded-xl"><ArrowUpFromLine className="h-6 w-6 text-primary" /></div>
+            <div className="text-right">
+              <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{t("vendorBorrowed")}</div>
+              <div className="text-4xl font-display font-black text-primary">{row.qty}</div>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-bold text-lg leading-tight">{row.name}</h4>
+            <div className="text-sm text-muted-foreground flex items-center gap-2"><IndianRupee className="h-3 w-3" /> {row.vendor}</div>
+          </div>
+        </Card>
+      );
     case "items_return":
-      return <tr><th className="text-left px-6 py-4">{t("date")}</th><th className="text-left px-6 py-4">{t("itemCatalogName")}</th><th className="text-left px-6 py-4">{t("from")}</th><th className="text-left px-6 py-4">{t("type")}</th><th className="text-right px-6 py-4">{t("qty")}</th></tr>;
-  }
-};
-
-const renderRow = (type: ReportType, r: any, t: any) => {
-  switch (type) {
-    case "income":
-      return <><td className="px-6 py-4 font-medium text-muted-foreground">{fmtDate(r.date)}</td><td className="px-6 py-4 font-bold">{r.customer}</td><td className="px-6 py-4"><Badge variant="outline" className="text-[10px] uppercase font-bold opacity-70">{r.type}</Badge></td><td className="px-6 py-4 text-xs font-semibold">{r.method}</td><td className="px-6 py-4 text-right text-success font-bold text-lg">{fmtINR(r.amount)}</td></>;
-    case "expense":
-      return <><td className="px-6 py-4 font-medium text-muted-foreground">{fmtDate(r.date)}</td><td className="px-6 py-4 font-bold">{r.category || t("none")}</td><td className="px-6 py-4 text-xs text-muted-foreground italic line-clamp-1">{r.description || "—"}</td><td className="px-6 py-4 text-right text-destructive font-bold text-lg">{fmtINR(r.amount)}</td></>;
-    case "booking":
-    case "pending_payments":
-    case "overdue_balance":
-      return <><td className="px-6 py-4 font-mono text-xs font-bold text-primary">{r.booking_id}</td><td className="px-6 py-4 font-bold">{r.customer_name}</td><td className="px-6 py-4 text-muted-foreground">{fmtDate(r.booking_date || r.start_date)}</td><td className="px-6 py-4 text-right font-semibold">{fmtINR(r.pricing?.totalAmount)}</td><td className="px-6 py-4 text-right text-success font-semibold">{fmtINR(r.total_paid || r.pricing?.advance || 0)}</td><td className="px-6 py-4 text-right text-destructive font-bold">{fmtINR(r.remaining_amount)}</td><td className="px-6 py-4"><Badge variant="outline" className={`text-[9px] uppercase font-bold ${statusTone[r.status]}`}>{t(r.status) || r.status}</Badge></td></>;
-    case "vendor_borrowed":
-      return <><td className="px-6 py-4 font-bold">{r.name}</td><td className="px-6 py-4 text-muted-foreground">{r.vendor}</td><td className="px-6 py-4 text-right font-display font-bold text-primary text-xl">{r.qty}</td></>;
-    case "items_return":
-      return <><td className="px-6 py-4 font-medium text-muted-foreground">{fmtDate(r.date)}</td><td className="px-6 py-4 font-bold">{r.item}</td><td className="px-6 py-4">{r.customer}</td><td className="px-6 py-4"><Badge variant="secondary" className="text-[9px] uppercase font-bold">{t(r.type) || r.type}</Badge></td><td className="px-6 py-4 text-right font-display font-bold text-lg">{r.qty}</td></>;
+      return (
+        <Card className="p-5 border-success/10 hover:border-success/30 transition-all shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div className="space-y-1">
+              <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">{fmtDate(row.date)}</div>
+              <h4 className="font-bold text-lg leading-tight">{row.item}</h4>
+            </div>
+            <Badge variant="secondary" className="text-[9px] font-black uppercase px-3">{t(row.type) || row.type}</Badge>
+          </div>
+          <div className="flex justify-between items-end pt-4 border-t border-success/5">
+            <div className="text-xs text-muted-foreground font-bold uppercase">{row.customer}</div>
+            <div className="text-3xl font-display font-black text-success">{row.qty}</div>
+          </div>
+        </Card>
+      );
+    default: return null;
   }
 };
 
 const renderFooter = (type: ReportType, data: any, t: any) => {
   switch (type) {
     case "income":
-      return <tr><td colSpan={4} className="px-6 py-4 text-right uppercase tracking-widest text-[10px]">{t("totalIncomeCollected")}</td><td className="px-6 py-4 text-right text-success text-xl">{fmtINR(data.total)}</td></tr>;
+      return <div className="bg-success/5 p-6 rounded-2xl border-2 border-success/20 flex justify-between items-center"><span className="text-sm font-black uppercase tracking-widest text-success/70">{t("totalIncomeCollected")}</span><span className="text-4xl font-display font-black text-success">{fmtINR(data.total)}</span></div>;
     case "expense":
-      return <tr><td colSpan={3} className="px-6 py-4 text-right uppercase tracking-widest text-[10px]">{t("totalExpensesPaid")}</td><td className="px-6 py-4 text-right text-destructive text-xl">{fmtINR(data.total)}</td></tr>;
+      return <div className="bg-destructive/5 p-6 rounded-2xl border-2 border-destructive/20 flex justify-between items-center"><span className="text-sm font-black uppercase tracking-widest text-destructive/70">{t("totalExpensesPaid")}</span><span className="text-4xl font-display font-black text-destructive">{fmtINR(data.total)}</span></div>;
     case "booking":
     case "pending_payments":
     case "overdue_balance":
       return (
-        <>
-          <tr><td colSpan={3} className="px-6 py-2 text-right uppercase tracking-widest text-[10px]">{t("totalBookingsValue")}</td><td className="px-6 py-2 text-right">{fmtINR(data.total)}</td><td colSpan={3}></td></tr>
-          <tr><td colSpan={3} className="px-6 py-2 text-right uppercase tracking-widest text-[10px]">{t("totalPaidAmount")}</td><td className="px-6 py-2 text-right text-success">{fmtINR(data.paid)}</td><td colSpan={3}></td></tr>
-          <tr className="bg-primary/5 text-primary"><td colSpan={3} className="px-6 py-3 text-right uppercase tracking-widest text-[10px] font-black">{t("netBalancePending")}</td><td className="px-6 py-3 text-right text-destructive text-xl">{fmtINR(data.balance)}</td><td colSpan={3}></td></tr>
-        </>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-5 bg-muted/50 rounded-2xl border border-primary/5 flex flex-col items-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">{t("totalBookingsValue")}</span>
+            <span className="text-2xl font-display font-bold">{fmtINR(data.total)}</span>
+          </div>
+          <div className="p-5 bg-success/5 rounded-2xl border border-success/20 flex flex-col items-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-success/60 mb-2">{t("totalPaidAmount")}</span>
+            <span className="text-2xl font-display font-bold text-success">{fmtINR(data.paid)}</span>
+          </div>
+          <div className="p-5 bg-destructive/5 rounded-2xl border-4 border-destructive/20 flex flex-col items-center ring-4 ring-destructive/5">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-destructive/60 mb-2 font-black">{t("netBalancePending")}</span>
+            <span className="text-4xl font-display font-black text-destructive">{fmtINR(data.balance)}</span>
+          </div>
+        </div>
       );
     case "vendor_borrowed":
-      return <tr><td colSpan={2} className="px-6 py-4 text-right uppercase tracking-widest text-[10px]">{t("uniqueItemsBorrowed")}</td><td className="px-6 py-4 text-right text-primary text-xl">{data.total}</td></tr>;
+      return <div className="bg-primary/5 p-6 rounded-2xl border-2 border-primary/20 flex justify-between items-center"><span className="text-sm font-black uppercase tracking-widest text-primary/70">{t("uniqueItemsBorrowed")}</span><span className="text-4xl font-display font-black text-primary">{data.total}</span></div>;
     case "items_return":
-      return <tr><td colSpan={4} className="px-6 py-4 text-right uppercase tracking-widest text-[10px]">{t("totalItemsReturned")}</td><td className="px-6 py-4 text-right text-success text-xl">{data.total}</td></tr>;
+      return <div className="bg-success/5 p-6 rounded-2xl border-2 border-success/20 flex justify-between items-center"><span className="text-sm font-black uppercase tracking-widest text-success/70">{t("totalItemsReturned")}</span><span className="text-4xl font-display font-black text-success">{data.total}</span></div>;
+    default: return null;
   }
 };
 

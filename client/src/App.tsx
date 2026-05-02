@@ -1,13 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster as ToasterUI } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 import { useEffect } from "react";
-import { io } from "socket.io-client";
 
 import Auth from "./pages/Auth.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
@@ -23,28 +22,16 @@ import Profile from "./pages/Profile.tsx";
 import Gallery from "./pages/Gallery.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
+import { Toaster } from 'react-hot-toast';
+
 const queryClient = new QueryClient();
 
 const App = () => {
-  useEffect(() => {
-    // Connect to backend for real-time updates
-    const socket = io(import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? window.location.origin : "http://localhost:5000"));
-    
-    socket.on("db_updated", (data) => {
-      console.log("Real-time update received:", data);
-      // Invalidate all queries to refresh the UI on all connected devices
-      queryClient.invalidateQueries();
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
+        <Toaster position="top-right" />
+        <ToasterUI />
         <Sonner />
         <BrowserRouter>
           <AuthProvider>

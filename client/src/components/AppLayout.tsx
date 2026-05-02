@@ -11,6 +11,15 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { BusinessLogo } from "@/components/BusinessLogo";
 import { ModuleKey } from "@/lib/permissions";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 type NavItem = { to: string; key: ModuleKey; icon: any };
 
@@ -90,59 +99,86 @@ export const AppLayout = () => {
   const handleLogout = async () => { await signOut(); navigate("/auth"); };
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-        <SidebarContent onLogout={handleLogout} email={user?.email} t={t} />
-      </aside>
+    <ErrorBoundary>
+      <div className="flex h-screen bg-background selection:bg-primary/10 selection:text-primary">
+        {/* Desktop sidebar */}
+        <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border shadow-xl z-30">
+          <SidebarContent onLogout={handleLogout} email={user?.email} t={t} />
+        </aside>
 
-      <main className="flex-1 overflow-y-auto">
-        {/* Top bar — hamburger on mobile, language/logout right side */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-4 md:px-8 py-2.5 border-b border-border bg-card/80 backdrop-blur">
-          <div className="flex items-center gap-3">
-            {/* Hamburger (mobile only) */}
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="md:hidden h-11 w-11"
-                  aria-label={t("menu")}
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Top bar — hamburger on mobile, language/logout right side */}
+          <header className="sticky top-0 z-20 flex items-center justify-between px-4 md:px-8 h-16 border-b border-border bg-card/80 backdrop-blur-md">
+            <div className="flex items-center gap-4">
+              {/* Hamburger (mobile only) */}
+              <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden h-10 w-10 hover:bg-muted"
+                    aria-label={t("menu")}
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="left"
+                  className="p-0 w-72 bg-sidebar text-sidebar-foreground border-sidebar-border"
                 >
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="left"
-                className="p-0 w-72 bg-sidebar text-sidebar-foreground border-sidebar-border"
-              >
-                <div className="flex flex-col h-full">
-                  <SidebarContent
-                    onNavigate={() => setMobileOpen(false)}
-                    onLogout={() => { setMobileOpen(false); handleLogout(); }}
-                    email={user?.email}
-                    t={t}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
+                  <div className="flex flex-col h-full">
+                    <SidebarContent
+                      onNavigate={() => setMobileOpen(false)}
+                      onLogout={() => { setMobileOpen(false); handleLogout(); }}
+                      email={user?.email}
+                      t={t}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
 
-            {/* Mobile brand */}
-            <div className="md:hidden flex items-center gap-2">
-              <BusinessLogo size={32} />
-              <div className="font-display text-base">ShivaShakti</div>
+              {/* Breadcrumbs / Page Context */}
+              <div className="hidden sm:block">
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
+                        {t("dashboard")}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className="font-bold text-foreground">
+                        {t(window.location.pathname.split("/")[1]) || "Page"}
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
+
+              {/* Mobile brand */}
+              <div className="md:hidden flex items-center gap-2">
+                <BusinessLogo size={28} />
+                <div className="font-display text-base font-bold tracking-tight">ShivaShakti</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center px-3 py-1.5 rounded-full bg-success/10 text-success text-[10px] font-black uppercase tracking-widest border border-success/20">
+                <div className="w-1.5 h-1.5 rounded-full bg-success mr-2 animate-pulse" />
+                Live Sync Active
+              </div>
+              <LanguageToggle />
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="p-4 md:p-8 max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <Outlet />
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-          </div>
-        </div>
-
-        <div className="p-4 md:p-8 max-w-[1400px] mx-auto animate-fade-in">
-          <Outlet />
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </ErrorBoundary>
   );
 };

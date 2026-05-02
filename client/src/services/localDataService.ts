@@ -1,9 +1,5 @@
-/**
- * Local Data Service
- * Connects to the Node.js backend for persistence.
- */
-
-const API_BASE = (import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? "" : "http://localhost:5000")) + "/api";
+import api from '../api/axios';
+import { toast } from 'react-hot-toast';
 
 export const localDataService = {
   /**
@@ -11,11 +7,11 @@ export const localDataService = {
    */
   getAll: async (table: string) => {
     try {
-      const res = await fetch(`${API_BASE}/${table}`);
-      if (!res.ok) return [];
-      return await res.json();
+      const { data } = await api.get(`/${table}`);
+      return data;
     } catch (error) {
       console.error(`Error fetching ${table}:`, error);
+      toast.error(`Failed to fetch ${table}`);
       return [];
     }
   },
@@ -25,9 +21,8 @@ export const localDataService = {
    */
   getById: async (table: string, id: string) => {
     try {
-      const res = await fetch(`${API_BASE}/${table}/${id}`);
-      if (!res.ok) return null;
-      return await res.json();
+      const { data } = await api.get(`/${table}/${id}`);
+      return data;
     } catch (error) {
       console.error(`Error fetching ${table}/${id}:`, error);
       return null;
@@ -39,21 +34,19 @@ export const localDataService = {
    */
   insert: async (table: string, item: any) => {
     try {
-      // Handle auto-incrementing-like IDs for bookings (e.g., BKG-1001)
+      // Handle auto-incrementing-like IDs for bookings
       if (table === "bookings" && !item.booking_id) {
         const items = await localDataService.getAll(table);
         const count = items.length + 1;
         item.booking_id = `BKG-${1000 + count}`;
       }
 
-      const res = await fetch(`${API_BASE}/${table}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
-      });
-      return await res.json();
+      const { data } = await api.post(`/${table}`, item);
+      toast.success('Saved successfully');
+      return data;
     } catch (error) {
       console.error(`Error inserting into ${table}:`, error);
+      toast.error('Failed to save');
       throw error;
     }
   },
@@ -63,14 +56,12 @@ export const localDataService = {
    */
   update: async (table: string, id: string, updates: any) => {
     try {
-      const res = await fetch(`${API_BASE}/${table}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      });
-      return await res.json();
+      const { data } = await api.put(`/${table}/${id}`, updates);
+      toast.success('Updated successfully');
+      return data;
     } catch (error) {
       console.error(`Error updating ${table}/${id}:`, error);
+      toast.error('Failed to update');
       throw error;
     }
   },
@@ -80,12 +71,12 @@ export const localDataService = {
    */
   delete: async (table: string, id: string) => {
     try {
-      const res = await fetch(`${API_BASE}/${table}/${id}`, {
-        method: "DELETE",
-      });
-      return res.ok;
+      await api.delete(`/${table}/${id}`);
+      toast.success('Deleted successfully');
+      return true;
     } catch (error) {
       console.error(`Error deleting from ${table}/${id}:`, error);
+      toast.error('Failed to delete');
       return false;
     }
   },
@@ -95,24 +86,20 @@ export const localDataService = {
    */
   saveAll: async (table: string, items: any[]) => {
     try {
-      const res = await fetch(`${API_BASE}/${table}/batch`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(items),
-      });
-      return await res.json();
+      const { data } = await api.post(`/${table}/batch`, items);
+      toast.success('Bulk update successful');
+      return data;
     } catch (error) {
       console.error(`Error batch updating ${table}:`, error);
+      toast.error('Bulk update failed');
       throw error;
     }
   },
 
   /**
-   * Initialize defaults (Handled by backend now, but kept for compatibility)
+   * Initialize defaults
    */
   initializeDefaults: async () => {
-    // The backend handles initialization of db.json if it's missing.
-    // We just trigger a ping or do nothing.
     console.log("Backend connection initialized.");
   }
 };
