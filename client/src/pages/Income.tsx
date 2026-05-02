@@ -23,7 +23,7 @@ const Income = () => {
   const [open, setOpen] = useState(false);
 
   const load = async () => {
-    const data = localDataService.getAll("bookings");
+    const data = await localDataService.getAll("bookings");
     const rows: any[] = [];
     (data || []).forEach((b: any) => {
       (b.payments || []).forEach((p: any, idx: number) => {
@@ -112,33 +112,43 @@ const ManualIncomeDialog = ({ onClose }: any) => {
   const [busy, setBusy] = useState(false);
 
   const save = async () => {
-    if (!customer) return toast.error("Customer name required");
-    if (amount <= 0) return toast.error("Amount required");
+    if (!customer || !amount) return toast.error("Please enter details");
     setBusy(true);
-    // Find or create a lightweight booking-like record? For simplicity, attach as a one-off booking with status "Returned"
-    // Here we just record under an existing booking if customer matches; else create a minimal booking.
-    const bookings = localDataService.getAll("bookings");
-    const existing = bookings.filter((b: any) => b.customer_name === customer).sort((a: any, b: any) => (b.created_at || "").localeCompare(a.created_at || ""))[0];
-    const newPayment = { amount, method, date: new Date(date).toISOString(), type, notes };
-
-    if (existing) {
-      const payments = [...((existing.payments as any[]) || []), newPayment];
-      const total_paid = (Number(existing.total_paid) || 0) + amount;
-      const total = Number((existing.pricing as any)?.totalAmount || 0);
-      const remaining = Math.max(0, total - total_paid);
-      localDataService.update("bookings", existing.id, { payments, total_paid, remaining_amount: remaining, payment_status: total_paid >= total && total > 0 ? "Paid" : total_paid > 0 ? "Partial" : "Unpaid" });
-    } else {
-      localDataService.insert("bookings", {
-        customer_name: customer, phone: "—", address: "—",
-        start_date: date, end_date: date,
-        items: [], pricing: { subtotal: amount, tax: 0, discount: 0, damageCharges: 0, lateFee: 0, totalAmount: amount },
-        payments: [newPayment], total_paid: amount, remaining_amount: 0, payment_status: "Paid",
-        status: "Returned", notes: `Manual income: ${notes}`,
-      });
+    try {
+      const bookings = await localDataService.getAll("bookings");
+      const existing = bookings.filter((b: any) => b.customer_name === customer).sort((a: any, b: any) => (b.created_at || "").localeCompare(a.created_at || ""))[0];
+      
+      if (existing) {
+        const total = Number(existing.pricing?.totalAmount || 0);
+        const payments = [...(existing.payments || []), { date: new Date().toISOString(), amount: Number(amount), method }];
+        const total_paid = payments.reduce((s, p) => s + p.amount, 0);
+        const remaining = Math.max(0, total - total_paid);
+        await localDataService.update("bookings", existing.id, { 
+          payments, 
+          total_paid, 
+          remaining_amount: remaining, 
+          payment_status: total_paid >= total && total > 0 ? "Paid" : total_paid > 0 ? "Partial" : "Unpaid" 
+        });
+      } else {
+        await localDataService.insert("bookings", {
+          customer_name: customer,
+          booking_date: new Date().toISOString(),
+          status: "Return + Paid",
+          payment_status: "Paid",
+          total_paid: Number(amount),
+          remaining_amount: 0,
+          payments: [{ date: new Date().toISOString(), amount: Number(amount), method }],
+          pricing: { totalAmount: Number(amount) }
+        });
+      }
+      toast.success("Income saved successfully");
+      onClose();
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save income");
+    } finally {
+      setBusy(false);
     }
-    toast.success("Income recorded");
-    setBusy(false);
-    onClose();
   };
 
   return (

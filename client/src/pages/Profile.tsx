@@ -31,7 +31,8 @@ const Profile = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const load = async () => {
-    const data = localDataService.getAll("business_profile")[0];
+    const records = await localDataService.getAll("business_profile");
+    const data = records[0];
     if (data) {
       setId(data.id);
       setBusinessName(data.business_name || "");
@@ -79,21 +80,23 @@ const Profile = () => {
   const save = async () => {
     setBusy(true);
     const payload = { business_name: businessName, owner_name: ownerName, phone, address, photo_url: photoUrl };
-    if (id) {
-      localDataService.update("business_profile", id, payload);
-    } else {
-      localDataService.insert("business_profile", payload);
-    }
-    const res = { error: null };
-    if (res.error) toast.error(res.error.message);
-    else {
+    try {
+      if (id) {
+        await localDataService.update("business_profile", id, payload);
+      } else {
+        await localDataService.insert("business_profile", payload);
+      }
+      
       toast.success(t("profileSaved"));
       // Refresh logo cache so sidebar/PDF pick up the new image immediately.
       const { refreshBusinessLogo } = await import("@/components/BusinessLogo");
       refreshBusinessLogo();
-      load();
+      await load();
+    } catch (error) {
+      console.error("Save error:", error);
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const onPhoto = async (file: File) => {
