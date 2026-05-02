@@ -16,7 +16,6 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(), 
     mode === "development" && componentTagger(),
-    /*
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'icons/*.png'],
@@ -25,6 +24,10 @@ export default defineConfig(({ mode }) => ({
         short_name: 'SSS Studio',
         description: 'Event Rental & Booking Management',
         theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
+        scope: '/',
+        start_url: '/',
         icons: [
           {
             src: 'icons/manifest-icon-192.maskable.png',
@@ -41,7 +44,6 @@ export default defineConfig(({ mode }) => ({
         ]
       }
     })
-    */
   ].filter(Boolean),
   resolve: {
     alias: {
