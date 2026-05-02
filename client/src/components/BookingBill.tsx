@@ -5,6 +5,7 @@ import { fmtINR, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { useBusinessLogo } from "./BusinessLogo";
 
 interface BookingBillProps {
   booking: {
@@ -28,6 +29,7 @@ interface BookingBillProps {
 export const BookingBill: React.FC<BookingBillProps> = ({ booking, onClose }) => {
   const billRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = React.useState(1);
+  const businessLogo = useBusinessLogo();
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -220,12 +222,15 @@ export const BookingBill: React.FC<BookingBillProps> = ({ booking, onClose }) =>
         >
         {/* Header */}
         <div className="header relative border-b-2 border-black pb-4 text-center">
-          <div className="deity-img absolute left-0 top-0 w-16 h-16 border border-black flex items-center justify-center bg-white">
-             {/* Reliable Om Symbol */}
-             <svg viewBox="0 0 24 24" className="w-12 h-12 text-black" fill="currentColor">
-               <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,12,10s10-4.48,10-10S17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8s8,3.59,8,8 S16.41,20,12,20z M11,7h2v2h-2V7z M11,11h2v6h-2V11z"/>
-               <text x="50%" y="50%" textAnchor="middle" dy=".35em" fontSize="16" fontWeight="bold">ॐ</text>
-             </svg>
+          <div className="deity-img absolute left-0 top-0 w-16 h-16 border border-black flex items-center justify-center bg-white overflow-hidden">
+             {businessLogo || "/logo.png" ? (
+               <img src={businessLogo || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
+             ) : (
+               <svg viewBox="0 0 24 24" className="w-12 h-12 text-black" fill="currentColor">
+                 <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,12,10s10-4.48,10-10S17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8s8,3.59,8,8 S16.41,20,12,20z M11,7h2v2h-2V7z M11,11h2v6h-2V11z"/>
+                 <text x="50%" y="50%" textAnchor="middle" dy=".35em" fontSize="16" fontWeight="bold">ॐ</text>
+               </svg>
+             )}
           </div>
           
           <div className="phones absolute right-0 top-0 text-right text-xs font-bold">

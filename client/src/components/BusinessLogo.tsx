@@ -43,7 +43,10 @@ export const BusinessLogo = ({ size = 40, className }: { size?: number; classNam
       {url ? (
         <img src={url} alt="Logo" className="h-full w-full object-cover" />
       ) : (
-        <Tent className="text-primary" style={{ height: size * 0.5, width: size * 0.5 }} strokeWidth={2.2} />
+        <img src="/logo.png" alt="Logo" className="h-full w-full object-cover" onError={(e) => {
+          e.currentTarget.style.display = 'none';
+          e.currentTarget.parentElement?.classList.add('bg-gradient-marigold');
+        }} />
       )}
     </div>
   );
